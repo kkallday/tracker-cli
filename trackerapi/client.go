@@ -17,7 +17,7 @@ type Story struct {
 type Client struct {
 	URL        string
 	Token      string
-	HttpClient http.Client
+	HttpClient *http.Client
 }
 
 func (c Client) ProjectStories(projectId int) ([]Story, error) {

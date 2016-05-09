@@ -21,7 +21,7 @@ func TestClientProjectStoriesReturnsStories(t *testing.T) {
 	client := trackerapi.Client{
 		URL:        testServer.URL,
 		Token:      "some-tracker-api-token",
-		HttpClient: *httpClient,
+		HttpClient: httpClient,
 	}
 
 	actualStories, err := client.ProjectStories(101)
@@ -69,7 +69,7 @@ func TestClientProjectStoriesMakesRequestToCorrectEndpointWithCorrectParams(t *t
 	client := trackerapi.Client{
 		URL:        testServer.URL,
 		Token:      "some-tracker-api-token",
-		HttpClient: *httpClient,
+		HttpClient: httpClient,
 	}
 
 	client.ProjectStories(101)
@@ -82,7 +82,7 @@ func TestClientProjectStoriesReturnsErrorWhenHttpClientGetFails(t *testing.T) {
 	client := trackerapi.Client{
 		URL:        "UNKNOWN-PROTOCOL://www.pivotaltracker.com",
 		Token:      "some-tracker-api-token",
-		HttpClient: *httpClient,
+		HttpClient: httpClient,
 	}
 	_, err := client.ProjectStories(104)
 
@@ -100,7 +100,7 @@ func TestClientProjectStoriesReturnsErrorWhenJSONDecodeFails(t *testing.T) {
 	client := trackerapi.Client{
 		URL:        "http://www.pivotaltracker.com/project/stories",
 		Token:      "some-tracker-api-token",
-		HttpClient: *httpClient,
+		HttpClient: httpClient,
 	}
 	_, err := client.ProjectStories(104)
 
