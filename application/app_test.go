@@ -26,10 +26,10 @@ func setupFakes() {
 	fakeClientProvider.ClientCall.Returns.Client = fakeClient
 }
 
-func TestAppRunRetrievesValuesFromConfigurationFile(t *testing.T) {
+func TestRunRetrievesValuesFromConfigurationFile(t *testing.T) {
 	setupFakes()
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("/dir/containing/config")
 
 	if err != nil {
 		t.Errorf("Run() returned an unexpected error %v", err)
@@ -38,32 +38,31 @@ func TestAppRunRetrievesValuesFromConfigurationFile(t *testing.T) {
 	actualCallCount := fakeConfigurationLoader.LoadCall.CallCount
 	expectedCallCount := 1
 	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called configurationLoader.Load() %d times, expected %d times", actualCallCount, expectedCallCount)
+		t.Errorf("Run() called configurationLoader.Load() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
 	}
 
 	actualPathToConfig := fakeConfigurationLoader.LoadCall.Receives.PathToConfig
-	expectedPathToConfig := "dir/containing/config"
+	expectedPathToConfig := "/dir/containing/config"
 	if actualPathToConfig != expectedPathToConfig {
 		t.Errorf("Run() called configurationLoader.Load(%q), expected configurationLoader.Load(%q)", actualPathToConfig, expectedPathToConfig)
 	}
 }
 
-func TestAppRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
+func TestRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
 	setupFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Error = errors.New("load failed")
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("")
 
-	actualError := err
-	expectedError := errors.New("load failed")
-	if actualError.Error() != expectedError.Error() {
-		t.Errorf("Run() returned error %q, expected error %q",
-			actualError.Error(), expectedError.Error())
+	actualErr := err
+	expectedErr := errors.New("load failed")
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
 	}
 }
 
-func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
+func TestRunInitializesClientWithConfiguration(t *testing.T) {
 	setupFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		Token:               "some-token",
@@ -71,7 +70,7 @@ func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
 	}
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("")
 
 	if err != nil {
 		t.Errorf("Run() returned an unexpected error %v", err)
@@ -80,7 +79,7 @@ func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
 	actualCallCount := fakeClientProvider.ClientCall.CallCount
 	expectedCallCount := 1
 	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called clientProvider.Client() %d times, expected %d time", actualCallCount, expectedCallCount)
+		t.Errorf("Run() called clientProvider.Client() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
 	}
 
 	actualURL := fakeClientProvider.ClientCall.Receives.URL
@@ -88,19 +87,18 @@ func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
 	actualToken := fakeClientProvider.ClientCall.Receives.Token
 	expectedToken := "some-token"
 	if actualURL != expectedURL || actualToken != expectedToken {
-		t.Errorf("Run() called clientProvider.Client(%q, %q), expected clientProvider.Client(%q, %q)",
-			actualURL, actualToken, expectedURL, expectedToken)
+		t.Errorf("Run() called clientProvider.Client(%q, %q), expected clientProvider.Client(%q, %q)", actualURL, actualToken, expectedURL, expectedToken)
 	}
 }
 
-func TestAppRunClientRetrievesProjectStories(t *testing.T) {
+func TestRunClientRetrievesProjectStories(t *testing.T) {
 	setupFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		ProjectID: 28,
 	}
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("")
 
 	if err != nil {
 		t.Errorf("Run() returned an unexpected error %v", err)
@@ -109,7 +107,7 @@ func TestAppRunClientRetrievesProjectStories(t *testing.T) {
 	actualCallCount := fakeClient.ProjectStoriesCall.CallCount
 	expectedCallCount := 1
 	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called client.ProjectStories() %d times, expected %d time", actualCallCount, expectedCallCount)
+		t.Errorf("Run() called client.ProjectStories() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
 	}
 
 	actualProjectID := fakeClient.ProjectStoriesCall.Receives.ProjectID
@@ -119,25 +117,24 @@ func TestAppRunClientRetrievesProjectStories(t *testing.T) {
 	}
 }
 
-func TestAppRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
+func TestRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
 	setupFakes()
 	fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	actualErr := app.Run("")
 
-	actualError := err
-	expectedError := errors.New("failed to retrieve project stories")
-	if actualError.Error() != expectedError.Error() {
-		t.Errorf("Run() returned error %q, expected error %q", actualError.Error(), expectedError.Error())
+	expectedErr := errors.New("failed to retrieve project stories")
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
 	}
 }
 
-func TestAppRunClientWritesTitleToLogger(t *testing.T) {
+func TestRunClientWritesTitleToLogger(t *testing.T) {
 	setupFakes()
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("")
 
 	if err != nil {
 		t.Errorf("Run() returned an unexpected error %v", err)
@@ -146,7 +143,7 @@ func TestAppRunClientWritesTitleToLogger(t *testing.T) {
 	actualCallCount := fakeLogger.LogCall.CallCount
 	expectedCallCount := 1
 	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called logger.LogStories %d time(s), expected %d time", actualCallCount, expectedCallCount)
+		t.Errorf("Run() called logger.LogStories %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
 	}
 
 	actualLogMessage := fakeLogger.LogCall.Receives.Message
@@ -156,7 +153,7 @@ func TestAppRunClientWritesTitleToLogger(t *testing.T) {
 	}
 }
 
-func TestAppRunClientWritesStoriesToLogger(t *testing.T) {
+func TestRunClientWritesStoriesToLogger(t *testing.T) {
 	setupFakes()
 	fakeClient.ProjectStoriesCall.Returns.Stories = []trackerapi.Story{
 		{109832, "feature", "User can do X", 2},
@@ -165,7 +162,7 @@ func TestAppRunClientWritesStoriesToLogger(t *testing.T) {
 	}
 
 	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
+	err := app.Run("")
 
 	if err != nil {
 		t.Errorf("Run() returned an unexpected error %v", err)
@@ -174,7 +171,7 @@ func TestAppRunClientWritesStoriesToLogger(t *testing.T) {
 	actualCallCount := fakeLogger.LogStoriesCall.CallCount
 	expectedCallCount := 1
 	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called logger.LogStories() %d times, expected %d time", actualCallCount, expectedCallCount)
+		t.Errorf("Run() called logger.LogStories() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
 	}
 
 	actualStories := fakeLogger.LogStoriesCall.Receives.Stories
@@ -185,6 +182,6 @@ func TestAppRunClientWritesStoriesToLogger(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(actualStories, expectedStories) {
-		t.Errorf("Run() called logger.LogStories(%+v)\nexpected logger.LogStories(%+v)", actualStories, expectedStories)
+		t.Errorf("Run() called \nlogger.LogStories(%+v)\nexpected \nlogger.LogStories(%+v)", actualStories, expectedStories)
 	}
 }
