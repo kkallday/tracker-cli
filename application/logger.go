@@ -18,7 +18,7 @@ func NewLogger(writer io.Writer) Logger {
 	}
 }
 
-func (l Logger) LogStories(stories ...trackerapi.Story) error {
+func (l Logger) LogStories(stories ...trackerapi.Story) {
 	for _, story := range stories {
 		if story.Story_type == "feature" {
 			fmt.Fprintf(l.writer, "%-9s #%-8d Pts: %d %s\n",
@@ -28,7 +28,6 @@ func (l Logger) LogStories(stories ...trackerapi.Story) error {
 				l.title(story.Story_type), story.Id, story.Name)
 		}
 	}
-	return nil
 }
 
 func (l Logger) Log(message string) {

@@ -14,19 +14,15 @@ type Logger struct {
 		Receives  struct {
 			Stories []trackerapi.Story
 		}
-		Returns struct {
-			Error error
-		}
 	}
-}
-
-func (l *Logger) LogStories(stories ...trackerapi.Story) error {
-	l.LogStoriesCall.CallCount++
-	l.LogStoriesCall.Receives.Stories = stories
-	return l.LogStoriesCall.Returns.Error
 }
 
 func (l *Logger) Log(message string) {
 	l.LogCall.CallCount++
 	l.LogCall.Receives.Message = message
+}
+
+func (l *Logger) LogStories(stories ...trackerapi.Story) {
+	l.LogStoriesCall.CallCount++
+	l.LogStoriesCall.Receives.Stories = stories
 }

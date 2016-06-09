@@ -20,7 +20,7 @@ type configurationLoader interface {
 }
 
 type logger interface {
-	LogStories(stories ...trackerapi.Story) error
+	LogStories(stories ...trackerapi.Story)
 	Log(message string)
 }
 
@@ -45,11 +45,7 @@ func (a App) Run(pathToConfig string) error {
 	}
 
 	a.logger.Log("Stories in-flight:")
-
-	err = a.logger.LogStories(stories...)
-	if err != nil {
-		return err
-	}
+	a.logger.LogStories(stories...)
 
 	return nil
 }

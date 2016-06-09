@@ -189,17 +189,3 @@ func TestAppRunClientWritesStoriesToLogger(t *testing.T) {
 		t.Errorf("Run() called logger.LogStories(%+v)\nexpected logger.LogStories(%+v)", actualStories, expectedStories)
 	}
 }
-
-func TestAppRunReturnsErrorWhenLoggerFails(t *testing.T) {
-	setupFakes()
-	fakeLogger.LogStoriesCall.Returns.Error = errors.New("logging failed")
-
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("dir/containing/config")
-
-	actualError := err
-	expectedError := errors.New("logging failed")
-	if actualError.Error() != expectedError.Error() {
-		t.Errorf("Run() returned error %q, expected error %q", actualError.Error(), expectedError.Error())
-	}
-}

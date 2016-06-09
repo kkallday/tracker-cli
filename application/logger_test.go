@@ -14,14 +14,10 @@ func TestLoggerLogStoriesWritesStories(t *testing.T) {
 
 	logger := application.NewLogger(fakeWriter)
 
-	err := logger.LogStories(
+	logger.LogStories(
 		trackerapi.Story{109832, "feature", "User can signup", 2},
 		trackerapi.Story{201294, "bug", "something is wrong", 0},
 	)
-
-	if err != nil {
-		t.Errorf("LogStories() returned unexpected error %v", err)
-	}
 
 	actualContents, err := fakeWriter.ReadBytes(byte('\n'))
 	if err != nil {
