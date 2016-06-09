@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/kkelani/tracker-cli/application"
-	"github.com/kkelani/tracker-cli/config"
 	"github.com/kkelani/tracker-cli/fakes"
 	"github.com/kkelani/tracker-cli/trackerapi"
 )
@@ -66,7 +65,7 @@ func TestAppRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
 
 func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
 	setupFakes()
-	fakeConfigurationLoader.LoadCall.Returns.Configuration = config.Configuration{
+	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		Token:               "some-token",
 		APIEndpointOverride: "http://www.some-other-tracker.com",
 	}
@@ -96,7 +95,7 @@ func TestAppRunInitializesClientWithConfiguration(t *testing.T) {
 
 func TestAppRunClientRetrievesProjectStories(t *testing.T) {
 	setupFakes()
-	fakeConfigurationLoader.LoadCall.Returns.Configuration = config.Configuration{
+	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		ProjectID: 28,
 	}
 

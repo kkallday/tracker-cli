@@ -1,9 +1,6 @@
 package application
 
-import (
-	"github.com/kkelani/tracker-cli/config"
-	"github.com/kkelani/tracker-cli/trackerapi"
-)
+import "github.com/kkelani/tracker-cli/trackerapi"
 
 type App struct {
 	clientProvider      clientProvider
@@ -16,7 +13,7 @@ type clientProvider interface {
 }
 
 type configurationLoader interface {
-	Load(pathToConfig string) (config.Configuration, error)
+	Load(pathToConfig string) (Configuration, error)
 }
 
 type logger interface {

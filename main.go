@@ -4,13 +4,12 @@ import (
 	"os"
 
 	"github.com/kkelani/tracker-cli/application"
-	"github.com/kkelani/tracker-cli/config"
 	"github.com/kkelani/tracker-cli/trackerapi"
 )
 
 func main() {
 	logger := application.NewLogger(os.Stdout)
-	configurationLoader := config.NewConfigurationLoader()
+	configurationLoader := application.NewConfigurationLoader()
 	clientProvider := trackerapi.NewClientProvider()
 
 	flagParser := application.NewFlagParser()
