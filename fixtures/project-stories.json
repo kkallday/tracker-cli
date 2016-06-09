@@ -1,23 +1,23 @@
 [{
     "id": 1091909,
     "story_type": "feature",
-    "name": "Feature 1",
+    "name": "User can signup",
     "estimate": 1,
     "owner_ids": [5, 9]
 }, {
     "id": 1909283,
     "story_type": "feature",
-    "name": "Feature 2",
+    "name": "User can create a todo list",
     "estimate": 2,
     "owner_ids": [5]
 }, {
     "id": 1032183,
     "story_type": "chore",
-    "name": "Chore 1",
+    "name": "Refactor app startup script",
     "owner_ids": [1, 7]
 }, {
     "id": 2308423,
     "story_type": "bug",
-    "name": "Bug 1",
+    "name": "Signup success message should go away after navigating away",
     "owner_ids": [4]
 }]

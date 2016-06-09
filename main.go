@@ -1,4 +1,28 @@
 package main
 
+import (
+	"os"
+
+	"github.com/kkelani/tracker-cli/application"
+	"github.com/kkelani/tracker-cli/config"
+	"github.com/kkelani/tracker-cli/trackerapi"
+)
+
 func main() {
+	logger := application.NewLogger(os.Stdout)
+	configurationLoader := config.NewConfigurationLoader()
+	clientProvider := trackerapi.NewClientProvider()
+
+	flagParser := application.NewFlagParser()
+	cmdLineConfig, err := flagParser.Parse(os.Args[1:])
+	if err != nil {
+		panic(err)
+	}
+
+	app := application.NewApp(clientProvider, configurationLoader, logger)
+	err = app.Run(cmdLineConfig.ConfigDir)
+	if err != nil {
+		panic(err)
+	}
+
 }

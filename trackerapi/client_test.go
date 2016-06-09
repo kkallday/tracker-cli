@@ -1,11 +1,11 @@
 package trackerapi_test
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"testing"
 
@@ -13,28 +13,23 @@ import (
 )
 
 func TestClientProjectStoriesReturnsStories(t *testing.T) {
-	httpClient, testServer := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, string(storiesFixture(t)))
+	testServer := startTestServer(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, storiesJSONFixture(t))
 	})
 	defer testServer.Close()
 
-	client := trackerapi.Client{
-		URL:        testServer.URL,
-		Token:      "some-tracker-api-token",
-		HttpClient: httpClient,
-	}
-
-	actualStories, err := client.ProjectStories(101)
+	client := trackerapi.NewClient(testServer.URL, "")
+	actualStories, err := client.ProjectStories(1)
 
 	if err != nil {
-		t.Errorf("ProjectStories(101) returned error: %v", err)
+		t.Errorf("ProjectStories() returned error %v", err)
 	}
 
 	expectedStories := []trackerapi.Story{
-		{Id: 1091909, Story_type: "feature", Name: "Feature 1", Estimate: 1, Owner_ids: []int{5, 9}},
-		{Id: 1909283, Story_type: "feature", Name: "Feature 2", Estimate: 2, Owner_ids: []int{5}},
-		{Id: 1032183, Story_type: "chore", Name: "Chore 1", Estimate: 0, Owner_ids: []int{1, 7}},
-		{Id: 2308423, Story_type: "bug", Name: "Bug 1", Estimate: 0, Owner_ids: []int{4}},
+		{Id: 1091909, Story_type: "feature", Name: "User can signup", Estimate: 1},
+		{Id: 1909283, Story_type: "feature", Name: "User can create a todo list", Estimate: 2},
+		{Id: 1032183, Story_type: "chore", Name: "Refactor app startup script", Estimate: 0},
+		{Id: 2308423, Story_type: "bug", Name: "Signup success message should go away after navigating away", Estimate: 0},
 	}
 
 	if !reflect.DeepEqual(actualStories, expectedStories) {
@@ -42,91 +37,111 @@ func TestClientProjectStoriesReturnsStories(t *testing.T) {
 	}
 }
 
-func TestClientProjectStoriesMakesRequestToCorrectEndpointWithCorrectParams(t *testing.T) {
-	var testServer *httptest.Server
-	httpClient, testServer := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		requestURL := fmt.Sprintf("%s://%s", r.URL.Scheme, r.URL.Host)
-		if requestURL != testServer.URL {
-			t.Errorf("Server host is %q, expected %q", requestURL, testServer.URL)
+func TestClientProjectStoriesRequestContainsCorrectPathAndQueryAndHeader(t *testing.T) {
+	testServer := startTestServer(func(w http.ResponseWriter, r *http.Request) {
+		actualPath := r.URL.Path
+		expectedPath := "/services/v5/projects/6/stories"
+		if actualPath != expectedPath {
+			t.Errorf("Path was %q, expected %q", actualPath, expectedPath)
 		}
 
-		if r.Method != "GET" {
-			t.Errorf("Server method is %q, expected \"GET\"", r.Method)
+		actualQuery := r.URL.Query().Get("with_state")
+		expectedQuery := "started"
+		if actualQuery != expectedQuery {
+			t.Errorf("GET query value for \"with_state\" was %q, expected %q", actualQuery, expectedQuery)
 		}
 
-		expectedPath := "/services/v5/projects/101/stories"
-		if r.URL.Path != expectedPath {
-			t.Errorf("Server path is %q, expected %q", r.URL.Path, expectedPath)
+		actualTrackerToken := r.Header.Get("X-TrackerToken")
+		expectedTrackerToken := "some-tracker-api-token"
+
+		if actualTrackerToken != expectedTrackerToken {
+			t.Errorf("Request header X-TrackerToken value was %q, expected %q",
+				actualTrackerToken, expectedTrackerToken)
 		}
 
-		expectedParams := "with_state=started"
-		if r.URL.RawQuery != expectedParams {
-			t.Error("Server params are %q, expected %q", "", expectedParams)
-		}
+		fmt.Fprint(w, "[]")
 	})
 	defer testServer.Close()
 
-	client := trackerapi.Client{
-		URL:        testServer.URL,
-		Token:      "some-tracker-api-token",
-		HttpClient: httpClient,
-	}
-
-	client.ProjectStories(101)
+	client := trackerapi.NewClient(testServer.URL, "some-tracker-api-token")
+	client.ProjectStories(6)
 }
 
-func TestClientProjectStoriesReturnsErrorWhenHttpClientGetFails(t *testing.T) {
-	httpClient, testServer := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {})
-	defer testServer.Close()
+func TestClientReturnsErrorWhenRequestCreationFails(t *testing.T) {
+	client := trackerapi.NewClient("http://%%%%%", "")
 
-	client := trackerapi.Client{
-		URL:        "UNKNOWN-PROTOCOL://www.pivotaltracker.com",
-		Token:      "some-tracker-api-token",
-		HttpClient: httpClient,
-	}
-	_, err := client.ProjectStories(104)
-
+	_, err := client.ProjectStories(9)
 	if err == nil {
-		t.Error("ProjectStories() did not return expected error")
+		t.Error("ProjectStories() did not return an error, expected an error")
+	}
+
+	actualErr := err
+	expectedErr := errors.New("parse http://%%%%%/services/v5/projects/9/stories?with_state=started: invalid URL escape \"%%%\"")
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("ProjectStories() returned error %q, expected %q", actualErr.Error(), expectedErr.Error())
 	}
 }
 
-func TestClientProjectStoriesReturnsErrorWhenJSONDecodeFails(t *testing.T) {
-	httpClient, testServer := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "this-is-unparseable-json")
+func TestClientReturnsErrorWhenRequestFails(t *testing.T) {
+	client := trackerapi.NewClient("UNKNOWN-PROTOCOL://foo.com", "")
+
+	_, err := client.ProjectStories(4)
+	if err == nil {
+		t.Error("ProjectStories() did not return an error, expected an error")
+	}
+
+	actualErr := err
+	expectedErr := errors.New("Get unknown-protocol://foo.com/services/v5/projects/4/stories?with_state=started: unsupported protocol scheme \"unknown-protocol\"")
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("ProjectStories() returned error %q, expected %q", actualErr.Error(), expectedErr.Error())
+	}
+}
+
+func TestClientReturnsErrorWhenJSONDecodingFails(t *testing.T) {
+	testServer := startTestServer(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "not-valid-json")
 	})
 	defer testServer.Close()
 
-	client := trackerapi.Client{
-		URL:        "http://www.pivotaltracker.com/project/stories",
-		Token:      "some-tracker-api-token",
-		HttpClient: httpClient,
-	}
-	_, err := client.ProjectStories(104)
+	client := trackerapi.NewClient(testServer.URL, "")
+	_, err := client.ProjectStories(1)
 
 	if err == nil {
-		t.Error("ProjectStories() did not return expected error")
+		t.Error("ProjectStories() did not return an error, expected an error")
+	}
+
+	actualErr := err
+	expectedErr := errors.New("invalid character 'o' in literal null (expecting 'u')")
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("ProjectStories() returned error %q, expected %q", actualErr.Error(), expectedErr.Error())
 	}
 }
 
-func startTestServer(t *testing.T, handler func(http.ResponseWriter, *http.Request)) (*http.Client, *httptest.Server) {
-	testServer := httptest.NewServer(http.HandlerFunc(handler))
+func TestClientReturnsErrorWhenRequestIsNotOK(t *testing.T) {
+	testServer := startTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"message": "an error occurred"}`))
+	})
+	defer testServer.Close()
 
-	transport := &http.Transport{
-		Proxy: func(req *http.Request) (*url.URL, error) {
-			return url.Parse(testServer.URL)
-		},
+	client := trackerapi.NewClient(testServer.URL, "")
+	_, err := client.ProjectStories(1)
+
+	expectedErr := errors.New(`bad response: {"message": "an error occurred"}`)
+	if err.Error() != expectedErr.Error() {
+		t.Errorf("ProjectStories() returned error %q, expected %q", err.Error(), expectedErr.Error())
 	}
-	httpClient := &http.Client{Transport: transport}
-
-	return httpClient, testServer
 }
 
-func storiesFixture(t *testing.T) []byte {
-	fixtureFileContents, err := ioutil.ReadFile("fixtures/2-features-1-chore-1-bug.json")
+func startTestServer(handler func(http.ResponseWriter, *http.Request)) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(handler))
+}
+
+func storiesJSONFixture(t *testing.T) string {
+	fixtureFileContents, err := ioutil.ReadFile("fixtures/stories.json")
 	if err != nil {
 		t.Errorf("Failed to load fixture file. %v", err)
 	}
 
-	return fixtureFileContents
+	return string(fixtureFileContents)
 }
