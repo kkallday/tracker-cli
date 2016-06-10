@@ -56,6 +56,10 @@ func TestRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
 
 	actualErr := app.Run("")
 
+	if actualErr == nil {
+		t.Error("Run() did not return an expected error")
+	}
+
 	expectedErr := errors.New("load failed")
 	if actualErr.Error() != expectedErr.Error() {
 		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
@@ -120,6 +124,9 @@ func TestRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
 	fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
 
 	actualErr := app.Run("")
+	if actualErr == nil {
+		t.Error("Run() did not return an expected error")
+	}
 
 	expectedErr := errors.New("failed to retrieve project stories")
 	if actualErr.Error() != expectedErr.Error() {

@@ -38,6 +38,10 @@ func TestLoadReturnsErrorWhenFileOpeningFails(t *testing.T) {
 	configLoader := application.NewConfigurationLoader()
 	_, err := configLoader.Load("/non/existent/dir/path")
 
+	if err == nil {
+		t.Error("Load() did not return an expected error")
+	}
+
 	if !strings.Contains(err.Error(), "/non/existent/dir/path/config.json: no such file or directory") {
 		t.Errorf("Load() did not return a \"no such file or directory\" error was %q", err.Error())
 	}
@@ -50,6 +54,10 @@ func TestLoadReturnsErrorWhenJSONDecodingFails(t *testing.T) {
 	configLoader := application.NewConfigurationLoader()
 	_, err := configLoader.Load(path.Dir(pathToConfigFile))
 
+	if err == nil {
+		t.Error("Load() did not return an expected error")
+	}
+
 	if !strings.Contains(err.Error(), "invalid character") {
 		t.Errorf("Load() did not return a \"json decoding\" error %q", err.Error())
 	}
@@ -61,6 +69,10 @@ func TestLoadReturnsErrorWhenFileIsMissingRequiredValues(t *testing.T) {
 
 	configLoader := application.NewConfigurationLoader()
 	_, actualErr := configLoader.Load(path.Dir(pathToConfigFile))
+
+	if actualErr == nil {
+		t.Error("Load() did not return an expected error")
+	}
 
 	expectedErr := errors.New("Configuration must contain a token and a project ID")
 
