@@ -8,12 +8,12 @@ type FlagParser struct {
 			Args []string
 		}
 		Returns struct {
-			CommandLineConfig application.CommandLineConfig
+			CommandLineArgs application.CommandLineArgs
 		}
 	}
 }
 
-func (f *FlagParser) Parse(args []string) application.CommandLineConfig {
+func (f *FlagParser) Parse(args []string) application.CommandLineArgs {
 	f.ParseCall.Receives.Args = args
-	return f.ParseCall.Returns.CommandLineConfig
+	return f.ParseCall.Returns.CommandLineArgs
 }

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-type CommandLineConfig struct {
+type CommandLineArgs struct {
 	ConfigDir string
 }
 
@@ -16,10 +16,10 @@ func NewFlagParser() FlagParser {
 	return FlagParser{}
 }
 
-func (f FlagParser) Parse(args []string) (CommandLineConfig, error) {
-	cmdLineFlags := CommandLineConfig{}
+func (f FlagParser) Parse(args []string) (CommandLineArgs, error) {
+	cmdLineFlags := CommandLineArgs{}
 
-	flagSet := flag.NewFlagSet("command line flags", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("command line args", flag.ContinueOnError)
 	flagSet.StringVar(&cmdLineFlags.ConfigDir, "config-dir", "", "path to directory containing config.json")
 	flagSet.Usage = func() {}
 	flagSet.SetOutput(ioutil.Discard)
