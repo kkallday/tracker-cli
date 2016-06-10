@@ -21,6 +21,7 @@ func NewConfigurationLoader() ConfigurationLoader {
 
 func (ConfigurationLoader) Load(pathToConfigDir string) (Configuration, error) {
 	pathToConfigFile := path.Join(pathToConfigDir, "config.json")
+
 	configFile, err := os.OpenFile(pathToConfigFile, 0, os.FileMode(0644))
 	if err != nil {
 		return Configuration{}, err
