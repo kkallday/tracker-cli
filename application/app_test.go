@@ -17,18 +17,20 @@ var (
 	fakeLogger              *fakes.Logger
 )
 
-func setupFakes() {
+func injectFakes() application.App {
 	fakeConfigurationLoader = &fakes.ConfigurationLoader{}
 	fakeClient = &fakes.Client{}
 	fakeClientProvider = &fakes.ClientProvider{}
 	fakeLogger = &fakes.Logger{}
 
 	fakeClientProvider.ClientCall.Returns.Client = fakeClient
+
+	return application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 }
 
 func TestRunRetrievesValuesFromConfigurationFile(t *testing.T) {
-	setupFakes()
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
+	app := injectFakes()
+
 	err := app.Run("/dir/containing/config")
 
 	if err != nil {
@@ -49,13 +51,11 @@ func TestRunRetrievesValuesFromConfigurationFile(t *testing.T) {
 }
 
 func TestRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Error = errors.New("load failed")
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-	err := app.Run("")
+	actualErr := app.Run("")
 
-	actualErr := err
 	expectedErr := errors.New("load failed")
 	if actualErr.Error() != expectedErr.Error() {
 		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
@@ -63,13 +63,12 @@ func TestRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
 }
 
 func TestRunInitializesClientWithConfiguration(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		Token:               "some-token",
 		APIEndpointOverride: "http://www.some-other-tracker.com",
 	}
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 	err := app.Run("")
 
 	if err != nil {
@@ -92,12 +91,11 @@ func TestRunInitializesClientWithConfiguration(t *testing.T) {
 }
 
 func TestRunClientRetrievesProjectStories(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
 		ProjectID: 28,
 	}
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 	err := app.Run("")
 
 	if err != nil {
@@ -118,10 +116,9 @@ func TestRunClientRetrievesProjectStories(t *testing.T) {
 }
 
 func TestRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 	fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 	actualErr := app.Run("")
 
 	expectedErr := errors.New("failed to retrieve project stories")
@@ -131,9 +128,8 @@ func TestRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
 }
 
 func TestRunClientWritesTitleToLogger(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 	err := app.Run("")
 
 	if err != nil {
@@ -154,14 +150,13 @@ func TestRunClientWritesTitleToLogger(t *testing.T) {
 }
 
 func TestRunClientWritesStoriesToLogger(t *testing.T) {
-	setupFakes()
+	app := injectFakes()
 	fakeClient.ProjectStoriesCall.Returns.Stories = []trackerapi.Story{
 		{109832, "feature", "User can do X", 2},
 		{201294, "bug", "something is wrong", 0},
 		{838312, "chore", "this is a chore", 0},
 	}
 
-	app := application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
 	err := app.Run("")
 
 	if err != nil {

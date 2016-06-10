@@ -13,7 +13,7 @@ type clientProvider interface {
 }
 
 type configurationLoader interface {
-	Load(pathToConfig string) (Configuration, error)
+	Load(pathToConfigDir string) (Configuration, error)
 }
 
 type logger interface {
@@ -29,8 +29,8 @@ func NewApp(clientProvider clientProvider, configurationLoader configurationLoad
 	}
 }
 
-func (a App) Run(pathToConfig string) error {
-	cfg, err := a.configurationLoader.Load(pathToConfig)
+func (a App) Run(pathToConfigDir string) error {
+	cfg, err := a.configurationLoader.Load(pathToConfigDir)
 	if err != nil {
 		return err
 	}
