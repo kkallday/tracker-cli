@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/kkelani/tracker-cli/trackerapi"
+	"github.com/kkallday/tracker-cli/trackerapi"
 )
 
 type Logger struct {

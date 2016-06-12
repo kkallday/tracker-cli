@@ -1,6 +1,6 @@
 package application
 
-import "github.com/kkelani/tracker-cli/trackerapi"
+import "github.com/kkallday/tracker-cli/trackerapi"
 
 type App struct {
 	clientProvider      clientProvider

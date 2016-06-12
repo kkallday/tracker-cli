@@ -1,54 +1,47 @@
 package main_test
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
-	"testing"
+
+	"github.com/onsi/gomega/gexec"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestMainShowsInFlightStories(t *testing.T) {
-	buildTrackerCLI(t)
+var _ = Describe("TrackerCLI", func() {
+	var (
+		testServer      *httptest.Server
+		pathToConfigDir string
+		session         *gexec.Session
+	)
 
-	server := startTestServer(t)
-	defer server.Close()
+	BeforeEach(func() {
+		testServer = startTestServer()
+		pathToConfigDir = filepath.Dir(writeConfigFile(testServer.URL))
+	})
 
-	configFile := writeConfigFile(t, server.URL)
-	defer os.Remove(configFile.Name())
+	AfterEach(func() {
+		testServer.Close()
+		os.Remove(pathToConfigDir)
+	})
 
-	cmd := exec.Command("tracker-cli", "--config-dir", path.Dir(configFile.Name()))
+	It("prints stories in-flight", func() {
+		session = executeTrackerCLI([]string{"--config-dir", pathToConfigDir})
 
-	stdout := bytes.NewBuffer([]byte{})
-	cmd.Stdout = stdout
+		expectedStdout := loadFixture("stories.stdout")
+		Expect(session.Out.Contents()).To(Equal([]byte(expectedStdout)))
+	})
 
-	err := cmd.Run()
-	if err != nil {
-		t.Errorf("tracker-cli execution failed. Err: %v", err)
-	}
+})
 
-	actualStdoutContentString := stdout.String()
-	expectedStdoutContentString := loadFixture(t, "stories.stdout")
-	if actualStdoutContentString != expectedStdoutContentString {
-		fmt.Println(actualStdoutContentString)
-		t.Errorf("Stdout is %q, did not match the fixture", actualStdoutContentString)
-	}
-}
-
-func buildTrackerCLI(t *testing.T) {
-	err := exec.Command("go", "install", "github.com/kkelani/tracker-cli").Run()
-	if err != nil {
-		t.Errorf("Failed to install tracker-cli\nError: %v", err)
-	}
-}
-
-func startTestServer(t *testing.T) *httptest.Server {
-	fixture := loadFixture(t, "project-stories.json")
+func startTestServer() *httptest.Server {
+	fixture := loadFixture("project-stories.json")
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(w, fixture)
 	}))
@@ -56,31 +49,17 @@ func startTestServer(t *testing.T) *httptest.Server {
 	return testServer
 }
 
-func writeConfigFile(t *testing.T, url string) *os.File {
+func writeConfigFile(apiEndpointOverride string) string {
 	configDirPath, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("Failed to create temp directory %v", err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
 	configFile, err := os.Create(filepath.Join(configDirPath, "config.json"))
-	if err != nil {
-		t.Errorf("Failed to create temp file %v", err)
-	}
+	Expect(err).NotTo(HaveOccurred())
+	defer configFile.Close()
 
-	fileContents := fmt.Sprintf(`{"token": "some-token", "project_id": 105, "api_endpoint_override": %q}`, url)
+	fileContents := fmt.Sprintf(`{"token": "some-token", "project_id": 105, "api_endpoint_override": %q}`, apiEndpointOverride)
 	_, err = configFile.WriteString(fileContents)
-	if err != nil {
-		t.Errorf("Failed to write to temp file %v", err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
-	return configFile
-}
-
-func loadFixture(t *testing.T, fileName string) string {
-	fixtureFileContents, err := ioutil.ReadFile(fmt.Sprintf("fixtures/%s", fileName))
-	if err != nil {
-		t.Errorf("Failed to load fixture file. %v", err)
-	}
-
-	return string(fixtureFileContents)
+	return configFile.Name()
 }

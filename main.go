@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/kkelani/tracker-cli/application"
-	"github.com/kkelani/tracker-cli/trackerapi"
+	"github.com/kkallday/tracker-cli/application"
+	"github.com/kkallday/tracker-cli/trackerapi"
 )
 
 func main() {
