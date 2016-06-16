@@ -1,102 +1,90 @@
 package application_test
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-	"testing"
 
 	"github.com/kkallday/tracker-cli/application"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestLoadReturnsConfiguration(t *testing.T) {
-	pathToConfigFile := writeConfigFile(t, `{"token": "some-token", "project_id": 54, "api_endpoint_override": "http://www.some-endpoint.com"}`)
-	defer os.Remove(pathToConfigFile)
+var _ = Describe("Configuration Loader", func() {
+	Describe("Load", func() {
+		It("returns configuration", func() {
+			pathToConfigFile, err := writeConfigFile(`{"token": "some-token", "project_id": 54, "api_endpoint_override": "http://www.some-endpoint.com"}`)
+			Expect(err).NotTo(HaveOccurred())
+			defer os.Remove(pathToConfigFile)
 
-	configLoader := application.NewConfigurationLoader()
-	configuration, err := configLoader.Load(path.Dir(pathToConfigFile))
-	if err != nil {
-		t.Errorf("Load() returned an unexpected error %q", err.Error())
-	}
+			configLoader := application.NewConfigurationLoader()
 
-	actualConfig := configuration
-	expectedConfig := application.Configuration{
-		Token:               "some-token",
-		ProjectID:           54,
-		APIEndpointOverride: "http://www.some-endpoint.com",
-	}
+			actualConfig, err := configLoader.Load(path.Dir(pathToConfigFile))
+			Expect(err).NotTo(HaveOccurred())
 
-	if actualConfig != expectedConfig {
-		t.Errorf("Load() returned %+v, expected %+v", actualConfig, expectedConfig)
-	}
-}
+			expectedConfig := application.Configuration{
+				Token:               "some-token",
+				ProjectID:           54,
+				APIEndpointOverride: "http://www.some-endpoint.com",
+			}
+			Expect(actualConfig).To(Equal(expectedConfig))
+		})
 
-func TestLoadReturnsErrorWhenFileOpeningFails(t *testing.T) {
-	configLoader := application.NewConfigurationLoader()
-	_, err := configLoader.Load("/non/existent/dir/path")
+		Context("failure cases", func() {
+			Context("when file cannot be opened", func() {
+				It("returns an error", func() {
+					configLoader := application.NewConfigurationLoader()
 
-	if err == nil {
-		t.Error("Load() did not return an expected error")
-	}
+					_, err := configLoader.Load("/non/existent/dir/path")
+					Expect(err).To(MatchError("/non/existent/dir/path/config.json: no such file or directory"))
+				})
+			})
 
-	if !strings.Contains(err.Error(), "/non/existent/dir/path/config.json: no such file or directory") {
-		t.Errorf("Load() did not return a \"no such file or directory\" error was %q", err.Error())
-	}
-}
+			Context("when config json cannot be decoded", func() {
+				It("returns an error", func() {
+					pathToConfigFile, err := writeConfigFile(`not-valid-json`)
+					Expect(err).NotTo(HaveOccurred())
+					defer os.Remove(pathToConfigFile)
 
-func TestLoadReturnsErrorWhenJSONDecodingFails(t *testing.T) {
-	pathToConfigFile := writeConfigFile(t, `not-valid-json`)
-	defer os.Remove(pathToConfigFile)
+					configLoader := application.NewConfigurationLoader()
+					_, err = configLoader.Load(path.Dir(pathToConfigFile))
+					Expect(err).To(MatchError(""))
+				})
+			})
 
-	configLoader := application.NewConfigurationLoader()
-	_, err := configLoader.Load(path.Dir(pathToConfigFile))
+			Context("when config file is missing required values", func() {
+				It("returns an error", func() {
+					pathToConfigFile, err := writeConfigFile(`{"api_endpoint_override": "http://www.some-endpoint.com"}`)
+					Expect(err).NotTo(HaveOccurred())
+					defer os.Remove(pathToConfigFile)
 
-	if err == nil {
-		t.Error("Load() did not return an expected error")
-	}
+					configLoader := application.NewConfigurationLoader()
+					_, err = configLoader.Load(path.Dir(pathToConfigFile))
+					Expect(err).To(MatchError("Configuration must contain a token and a project ID"))
+				})
+			})
+		})
+	})
+})
 
-	if !strings.Contains(err.Error(), "invalid character") {
-		t.Errorf("Load() did not return a \"json decoding\" error %q", err.Error())
-	}
-}
-
-func TestLoadReturnsErrorWhenFileIsMissingRequiredValues(t *testing.T) {
-	pathToConfigFile := writeConfigFile(t, `{"api_endpoint_override": "http://www.some-endpoint.com"}`)
-	defer os.Remove(pathToConfigFile)
-
-	configLoader := application.NewConfigurationLoader()
-	_, actualErr := configLoader.Load(path.Dir(pathToConfigFile))
-
-	if actualErr == nil {
-		t.Error("Load() did not return an expected error")
-	}
-
-	expectedErr := errors.New("Configuration must contain a token and a project ID")
-
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("Load() returned error %q, expected %q", actualErr.Error(), expectedErr.Error())
-	}
-}
-
-func writeConfigFile(t *testing.T, configJSON string) string {
+func writeConfigFile(configJSON string) (string, error) {
 	configDirPath, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Errorf("Failed to create temp directory %q", err.Error())
+		return "", err
 	}
 
 	configFile, err := os.Create(filepath.Join(configDirPath, "config.json"))
 	defer configFile.Close()
 	if err != nil {
-		t.Errorf("Failed to create temp file %q", err.Error())
+		return "", err
 	}
 
 	_, err = configFile.WriteString(configJSON)
 	if err != nil {
-		t.Errorf("Failed to write to temp file %q", err.Error())
+		return "", err
 	}
 
-	return configFile.Name()
+	return configFile.Name(), nil
 }

@@ -2,188 +2,106 @@ package application_test
 
 import (
 	"errors"
-	"reflect"
-	"testing"
 
 	"github.com/kkallday/tracker-cli/application"
 	"github.com/kkallday/tracker-cli/fakes"
 	"github.com/kkallday/tracker-cli/trackerapi"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-var (
-	fakeConfigurationLoader *fakes.ConfigurationLoader
-	fakeClient              *fakes.Client
-	fakeClientProvider      *fakes.ClientProvider
-	fakeLogger              *fakes.Logger
-)
+var _ = Describe("App", func() {
+	var (
+		fakeConfigurationLoader *fakes.ConfigurationLoader
+		fakeClient              *fakes.Client
+		fakeClientProvider      *fakes.ClientProvider
+		fakeLogger              *fakes.Logger
 
-func injectFakes() application.App {
-	fakeConfigurationLoader = &fakes.ConfigurationLoader{}
-	fakeClient = &fakes.Client{}
-	fakeClientProvider = &fakes.ClientProvider{}
-	fakeLogger = &fakes.Logger{}
+		app application.App
+	)
 
-	fakeClientProvider.ClientCall.Returns.Client = fakeClient
+	BeforeEach(func() {
+		fakeConfigurationLoader = &fakes.ConfigurationLoader{}
+		fakeClient = &fakes.Client{}
+		fakeClientProvider = &fakes.ClientProvider{}
+		fakeLogger = &fakes.Logger{}
 
-	return application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
-}
+		fakeClientProvider.ClientCall.Returns.Client = fakeClient
 
-func TestRunRetrievesValuesFromConfigurationFile(t *testing.T) {
-	app := injectFakes()
+		app = application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
+	})
 
-	err := app.Run("/dir/containing/config")
+	Describe("Run", func() {
+		It("retrieves values from configuration file", func() {
+			err := app.Run("/dir/containing/config")
+			Expect(err).NotTo(HaveOccurred())
 
-	if err != nil {
-		t.Errorf("Run() returned an unexpected error %v", err)
-	}
+			Expect(fakeConfigurationLoader.LoadCall.CallCount).To(Equal(1))
+			Expect(fakeConfigurationLoader.LoadCall.Receives.PathToConfig).To(Equal("/dir/containing/config"))
+		})
 
-	actualCallCount := fakeConfigurationLoader.LoadCall.CallCount
-	expectedCallCount := 1
-	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called configurationLoader.Load() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
-	}
+		It("initializes client with configuration", func() {
+			fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
+				Token:               "some-token",
+				APIEndpointOverride: "http://www.some-other-tracker.com",
+			}
 
-	actualPathToConfig := fakeConfigurationLoader.LoadCall.Receives.PathToConfig
-	expectedPathToConfig := "/dir/containing/config"
-	if actualPathToConfig != expectedPathToConfig {
-		t.Errorf("Run() called configurationLoader.Load(%q), expected configurationLoader.Load(%q)", actualPathToConfig, expectedPathToConfig)
-	}
-}
+			err := app.Run("")
+			Expect(err).NotTo(HaveOccurred())
 
-func TestRunReturnsErrorWhenConfigurationLoaderFails(t *testing.T) {
-	app := injectFakes()
-	fakeConfigurationLoader.LoadCall.Returns.Error = errors.New("load failed")
+			Expect(fakeClientProvider.ClientCall.CallCount).To(Equal(1))
+			Expect(fakeClientProvider.ClientCall.Receives.URL).To(Equal("http://www.some-other-tracker.com"))
+			Expect(fakeClientProvider.ClientCall.Receives.Token).To(Equal("some-token"))
+		})
 
-	actualErr := app.Run("")
+		It("retrieves project stories", func() {
+			fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
+				ProjectID: 28,
+			}
 
-	if actualErr == nil {
-		t.Error("Run() did not return an expected error")
-	}
+			err := app.Run("")
+			Expect(err).NotTo(HaveOccurred())
 
-	expectedErr := errors.New("load failed")
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
-	}
-}
+			Expect(fakeClient.ProjectStoriesCall.CallCount).To(Equal(1))
+			Expect(fakeClient.ProjectStoriesCall.Receives.ProjectID).To(Equal(28))
+		})
 
-func TestRunInitializesClientWithConfiguration(t *testing.T) {
-	app := injectFakes()
-	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
-		Token:               "some-token",
-		APIEndpointOverride: "http://www.some-other-tracker.com",
-	}
+		It("writes title and stories to logger", func() {
+			err := app.Run("")
+			Expect(err).NotTo(HaveOccurred())
 
-	err := app.Run("")
+			Expect(fakeLogger.LogCall.CallCount).To(Equal(1))
+			Expect(fakeLogger.LogCall.Receives.Message).To(Equal("Stories in-flight:"))
 
-	if err != nil {
-		t.Errorf("Run() returned an unexpected error %v", err)
-	}
+			Expect(fakeLogger.LogStoriesCall.CallCount).To(Equal(1))
 
-	actualCallCount := fakeClientProvider.ClientCall.CallCount
-	expectedCallCount := 1
-	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called clientProvider.Client() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
-	}
+			expectedStories := []trackerapi.Story{
+				{109832, "feature", "User can do X", 2},
+				{201294, "bug", "something is wrong", 0},
+				{838312, "chore", "this is a chore", 0},
+			}
+			Expect(fakeLogger.LogStoriesCall.Receives.Stories).To(Equal(expectedStories))
+		})
 
-	actualURL := fakeClientProvider.ClientCall.Receives.URL
-	expectedURL := "http://www.some-other-tracker.com"
-	actualToken := fakeClientProvider.ClientCall.Receives.Token
-	expectedToken := "some-token"
-	if actualURL != expectedURL || actualToken != expectedToken {
-		t.Errorf("Run() called clientProvider.Client(%q, %q), expected clientProvider.Client(%q, %q)", actualURL, actualToken, expectedURL, expectedToken)
-	}
-}
+		Context("failure cases", func() {
+			Context("when configuration loader fails", func() {
+				It("returns an error", func() {
+					fakeConfigurationLoader.LoadCall.Returns.Error = errors.New("load failed")
 
-func TestRunClientRetrievesProjectStories(t *testing.T) {
-	app := injectFakes()
-	fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
-		ProjectID: 28,
-	}
+					err := app.Run("")
+					Expect(err).To(MatchError("load failed"))
+				})
+			})
 
-	err := app.Run("")
+			Context("when client fails to retrieve project stories", func() {
+				It("returns an error", func() {
+					fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
 
-	if err != nil {
-		t.Errorf("Run() returned an unexpected error %v", err)
-	}
-
-	actualCallCount := fakeClient.ProjectStoriesCall.CallCount
-	expectedCallCount := 1
-	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called client.ProjectStories() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
-	}
-
-	actualProjectID := fakeClient.ProjectStoriesCall.Receives.ProjectID
-	expectedProjectID := 28
-	if actualProjectID != expectedProjectID {
-		t.Errorf("Run() called client.ProjectStories(%d), expected client.ProjectStories(%d)", actualProjectID, expectedProjectID)
-	}
-}
-
-func TestRunClientReturnsErrorWhenRetrievingProjectStoriesFails(t *testing.T) {
-	app := injectFakes()
-	fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
-
-	actualErr := app.Run("")
-	if actualErr == nil {
-		t.Error("Run() did not return an expected error")
-	}
-
-	expectedErr := errors.New("failed to retrieve project stories")
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("Run() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
-	}
-}
-
-func TestRunClientWritesTitleToLogger(t *testing.T) {
-	app := injectFakes()
-
-	err := app.Run("")
-
-	if err != nil {
-		t.Errorf("Run() returned an unexpected error %v", err)
-	}
-
-	actualCallCount := fakeLogger.LogCall.CallCount
-	expectedCallCount := 1
-	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called logger.LogStories %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
-	}
-
-	actualLogMessage := fakeLogger.LogCall.Receives.Message
-	expectedLogMessage := "Stories in-flight:"
-	if actualLogMessage != expectedLogMessage {
-		t.Errorf("Run() called logger.LogStories(%q), expected logger.LogStories(%q)", actualLogMessage, expectedLogMessage)
-	}
-}
-
-func TestRunClientWritesStoriesToLogger(t *testing.T) {
-	app := injectFakes()
-	fakeClient.ProjectStoriesCall.Returns.Stories = []trackerapi.Story{
-		{109832, "feature", "User can do X", 2},
-		{201294, "bug", "something is wrong", 0},
-		{838312, "chore", "this is a chore", 0},
-	}
-
-	err := app.Run("")
-
-	if err != nil {
-		t.Errorf("Run() returned an unexpected error %v", err)
-	}
-
-	actualCallCount := fakeLogger.LogStoriesCall.CallCount
-	expectedCallCount := 1
-	if actualCallCount != expectedCallCount {
-		t.Errorf("Run() called logger.LogStories() %d time(s), expected %d time(s)", actualCallCount, expectedCallCount)
-	}
-
-	actualStories := fakeLogger.LogStoriesCall.Receives.Stories
-	expectedStories := []trackerapi.Story{
-		{109832, "feature", "User can do X", 2},
-		{201294, "bug", "something is wrong", 0},
-		{838312, "chore", "this is a chore", 0},
-	}
-
-	if !reflect.DeepEqual(actualStories, expectedStories) {
-		t.Errorf("Run() called \nlogger.LogStories(%+v)\nexpected \nlogger.LogStories(%+v)", actualStories, expectedStories)
-	}
-}
+					err := app.Run("")
+					Expect(err).To(MatchError("failed to retrieve project stories"))
+				})
+			})
+		})
+	})
+})
