@@ -1,36 +1,30 @@
 package application_test
 
 import (
-	"errors"
-	"testing"
-
 	"github.com/kkallday/tracker-cli/application"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestParseReturnsCommandLineArgs(t *testing.T) {
-	flagParser := application.NewFlagParser()
-	actualCommandLineArgs, err := flagParser.Parse([]string{"--config-dir", "/path/to/config"})
+var _ = Describe("Flag Parser", func() {
+	Describe("Parse", func() {
+		It("returns command line args", func() {
+			flagParser := application.NewFlagParser()
+			actualCommandLineArgs, err := flagParser.Parse([]string{"--config-dir", "/path/to/config"})
+			Expect(err).NotTo(HaveOccurred())
 
-	if err != nil {
-		t.Errorf("Parse() return an unexpected error: %q", err.Error())
-	}
+			expectedCommandLineArgs := application.CommandLineArgs{ConfigDir: "/path/to/config"}
+			Expect(actualCommandLineArgs).To(Equal(expectedCommandLineArgs))
+		})
 
-	expectedCommandLineArgs := application.CommandLineArgs{ConfigDir: "/path/to/config"}
-	if actualCommandLineArgs != expectedCommandLineArgs {
-		t.Errorf("Parse() returned %+v, expected %+v", actualCommandLineArgs, expectedCommandLineArgs)
-	}
-}
-
-func TestParseReturnsErrorWhenConfigDirIsMissing(t *testing.T) {
-	flagParser := application.NewFlagParser()
-	_, actualErr := flagParser.Parse([]string{"--some-arg", "some-value"})
-
-	if actualErr == nil {
-		t.Error("Parse() did not return an expected error")
-	}
-
-	expectedErr := errors.New("missing required flag --config-dir")
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("Parse() returned error %q, expected error %q", actualErr.Error(), expectedErr.Error())
-	}
-}
+		Context("failure cases", func() {
+			Context("when config dir is not given", func() {
+				It("returns an error", func() {
+					flagParser := application.NewFlagParser()
+					_, err := flagParser.Parse([]string{"--some-arg", "some-value"})
+					Expect(err).To(MatchError("missing required flag --config-dir"))
+				})
+			})
+		})
+	})
+})

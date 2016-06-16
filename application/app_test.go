@@ -68,6 +68,12 @@ var _ = Describe("App", func() {
 		})
 
 		It("writes title and stories to logger", func() {
+			fakeClient.ProjectStoriesCall.Returns.Stories = []trackerapi.Story{
+				{109832, "feature", "User can do X", 2},
+				{201294, "bug", "something is wrong", 0},
+				{838312, "chore", "this is a chore", 0},
+			}
+
 			err := app.Run("")
 			Expect(err).NotTo(HaveOccurred())
 

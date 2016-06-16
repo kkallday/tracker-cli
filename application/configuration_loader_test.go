@@ -38,7 +38,7 @@ var _ = Describe("Configuration Loader", func() {
 					configLoader := application.NewConfigurationLoader()
 
 					_, err := configLoader.Load("/non/existent/dir/path")
-					Expect(err).To(MatchError("/non/existent/dir/path/config.json: no such file or directory"))
+					Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
 				})
 			})
 
@@ -50,7 +50,7 @@ var _ = Describe("Configuration Loader", func() {
 
 					configLoader := application.NewConfigurationLoader()
 					_, err = configLoader.Load(path.Dir(pathToConfigFile))
-					Expect(err).To(MatchError(""))
+					Expect(err).To(MatchError("invalid character 'o' in literal null (expecting 'u')"))
 				})
 			})
 
