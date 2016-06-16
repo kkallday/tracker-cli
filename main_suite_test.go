@@ -14,7 +14,7 @@ import (
 
 func TestTrackercli(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "TrackerCLI Suite")
+	RunSpecs(t, "Acceptance Suite")
 }
 
 var pathToTrackerCLI string
