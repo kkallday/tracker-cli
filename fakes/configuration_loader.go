@@ -1,6 +1,6 @@
 package fakes
 
-import "github.com/kkelani/tracker-cli/application"
+import "github.com/kkallday/tracker-cli/application"
 
 type ConfigurationLoader struct {
 	LoadCall struct {

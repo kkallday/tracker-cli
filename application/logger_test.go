@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kkelani/tracker-cli/application"
-	"github.com/kkelani/tracker-cli/trackerapi"
+	"github.com/kkallday/tracker-cli/application"
+	"github.com/kkallday/tracker-cli/trackerapi"
 )
 
 func TestLoggerLogStoriesWritesStories(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kkelani/tracker-cli/application"
+	"github.com/kkallday/tracker-cli/application"
 )
 
 func TestLoadReturnsConfiguration(t *testing.T) {

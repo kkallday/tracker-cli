@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kkelani/tracker-cli/application"
-	"github.com/kkelani/tracker-cli/fakes"
-	"github.com/kkelani/tracker-cli/trackerapi"
+	"github.com/kkallday/tracker-cli/application"
+	"github.com/kkallday/tracker-cli/fakes"
+	"github.com/kkallday/tracker-cli/trackerapi"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kkelani/tracker-cli/application"
+	"github.com/kkallday/tracker-cli/application"
 )
 
 func TestParseReturnsCommandLineArgs(t *testing.T) {

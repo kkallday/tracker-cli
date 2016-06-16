@@ -1,6 +1,6 @@
 package fakes
 
-import "github.com/kkelani/tracker-cli/trackerapi"
+import "github.com/kkallday/tracker-cli/trackerapi"
 
 type Client struct {
 	ProjectStoriesCall struct {
