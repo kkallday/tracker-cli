@@ -1,0 +1,13 @@
+package trackerapi_test
+
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"testing"
+)
+
+func TestTrackerapi(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Trackerapi Suite")
+}

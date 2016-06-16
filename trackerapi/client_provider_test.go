@@ -1,37 +1,40 @@
 package trackerapi_test
 
 import (
-	"testing"
+	"github.com/kkallday/tracker-cli/trackerapi"
 
-	"github.com/kkelani/tracker-cli/trackerapi"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestClientProviderReturnsClient(t *testing.T) {
-	clientProvider := trackerapi.NewClientProvider()
+var _ = Describe("Client Provider", func() {
+	Describe("Client", func() {
+		It("returns client", func() {
+			clientProvider := trackerapi.NewClientProvider()
 
-	actualClient := clientProvider.Client("some-token", "http://www.some-tracker-api.com")
+			actualClient := clientProvider.Client("some-token", "http://www.some-tracker-api.com")
 
-	expectedClient := trackerapi.TrackerClient{
-		URL:   "http://www.some-tracker-api.com",
-		Token: "some-token",
-	}
+			expectedClient := trackerapi.TrackerClient{
+				URL:   "http://www.some-tracker-api.com",
+				Token: "some-token",
+			}
 
-	if actualClient != expectedClient {
-		t.Errorf("Client() returned %+v, expected %+v", actualClient, expectedClient)
-	}
-}
+			Expect(actualClient).To(Equal(expectedClient))
+		})
 
-func TestClientProviderReturnsClientWithDefaultEndpointOverride(t *testing.T) {
-	clientProvider := trackerapi.NewClientProvider()
+		Context("when api endpoint is not specified", func() {
+			It("returns a client with default URL", func() {
+				clientProvider := trackerapi.NewClientProvider()
 
-	actualClient := clientProvider.Client("some-token", "")
+				actualClient := clientProvider.Client("some-token", "")
 
-	expectedClient := trackerapi.TrackerClient{
-		URL:   "https://www.pivotaltracker.com",
-		Token: "some-token",
-	}
+				expectedClient := trackerapi.TrackerClient{
+					URL:   "https://www.pivotaltracker.com",
+					Token: "some-token",
+				}
 
-	if actualClient != expectedClient {
-		t.Errorf("Client() returned %+v, expected %+v", actualClient, expectedClient)
-	}
-}
+				Expect(actualClient).To(Equal(expectedClient))
+			})
+		})
+	})
+})
