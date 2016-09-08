@@ -1,4 +1,4 @@
-# tracker-cli
+# tracker-cli [![Build Status](https://travis-ci.org/kkallday/tracker-cli.svg?branch=master)](https://travis-ci.org/kkallday/tracker-cli)
 
 A simple command-line tool to display stories from your Pivotal Tracker project in 
 the terminal. Less "Command+Tab"-ing to-and-from your browser.
