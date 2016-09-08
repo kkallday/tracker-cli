@@ -6,8 +6,8 @@ type ClientProvider struct {
 	ClientCall struct {
 		CallCount int
 		Receives  struct {
-			URL   string
-			Token string
+			ProjectID int
+			Token     string
 		}
 		Returns struct {
 			Client trackerapi.Client
@@ -15,9 +15,9 @@ type ClientProvider struct {
 	}
 }
 
-func (c *ClientProvider) Client(token, url string) trackerapi.Client {
+func (c *ClientProvider) Client(projectID int, token string) trackerapi.Client {
 	c.ClientCall.CallCount++
-	c.ClientCall.Receives.URL = url
+	c.ClientCall.Receives.ProjectID = projectID
 	c.ClientCall.Receives.Token = token
 	return c.ClientCall.Returns.Client
 }

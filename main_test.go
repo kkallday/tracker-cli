@@ -2,11 +2,8 @@ package main_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 
 	"github.com/onsi/gomega/gexec"
 
@@ -16,23 +13,20 @@ import (
 
 var _ = Describe("TrackerCLI", func() {
 	var (
-		testServer      *httptest.Server
-		pathToConfigDir string
-		session         *gexec.Session
+		testServer *httptest.Server
+		session    *gexec.Session
 	)
 
 	BeforeEach(func() {
 		testServer = startTestServer()
-		pathToConfigDir = filepath.Dir(writeConfigFile(testServer.URL))
 	})
 
 	AfterEach(func() {
 		testServer.Close()
-		os.Remove(pathToConfigDir)
 	})
 
 	It("prints stories in-flight", func() {
-		session = executeTrackerCLI([]string{"--config-dir", pathToConfigDir})
+		session = executeTrackerCLI([]string{"--api", testServer.URL}, 12345, "some-tracker-api-token")
 
 		expectedStdout := loadFixture("stories.stdout")
 		Expect(session.Out.Contents()).To(Equal([]byte(expectedStdout)))
@@ -42,24 +36,14 @@ var _ = Describe("TrackerCLI", func() {
 
 func startTestServer() *httptest.Server {
 	fixture := loadFixture("project-stories.json")
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		Expect(path).To(Equal("/services/v5/projects/12345/stories"))
+
+		trackerToken := r.Header.Get("X-TrackerToken")
+		Expect(trackerToken).To(Equal("some-tracker-api-token"))
 		fmt.Fprint(w, fixture)
 	}))
 
 	return testServer
-}
-
-func writeConfigFile(apiEndpointOverride string) string {
-	configDirPath, err := ioutil.TempDir("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	configFile, err := os.Create(filepath.Join(configDirPath, "config.json"))
-	Expect(err).NotTo(HaveOccurred())
-	defer configFile.Close()
-
-	fileContents := fmt.Sprintf(`{"token": "some-token", "project_id": 105, "api_endpoint_override": %q}`, apiEndpointOverride)
-	_, err = configFile.WriteString(fileContents)
-	Expect(err).NotTo(HaveOccurred())
-
-	return configFile.Name()
 }

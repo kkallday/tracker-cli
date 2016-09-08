@@ -3,7 +3,9 @@ package main_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 
 	"github.com/onsi/gomega/gexec"
@@ -29,7 +31,13 @@ var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
 
-func executeTrackerCLI(args []string) *gexec.Session {
+func executeTrackerCLI(args []string, projectID int, token string) *gexec.Session {
+	err := os.Setenv("PROJECT_ID", strconv.Itoa(projectID))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = os.Setenv("TOKEN", token)
+	Expect(err).ToNot(HaveOccurred())
+
 	command := exec.Command(pathToTrackerCLI, args...)
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())

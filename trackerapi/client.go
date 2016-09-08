@@ -15,24 +15,26 @@ type Story struct {
 }
 
 type Client interface {
-	ProjectStories(projectId int) ([]Story, error)
+	ProjectStories() ([]Story, error)
 }
 
 type TrackerClient struct {
-	URL   string
-	Token string
+	URL       string
+	Token     string
+	ProjectID int
 }
 
-func NewClient(url, token string) Client {
+func NewClient(url string, projectID int, token string) Client {
 	return TrackerClient{
-		URL:   url,
-		Token: token,
+		ProjectID: projectID,
+		URL:       url,
+		Token:     token,
 	}
 }
 
-func (c TrackerClient) ProjectStories(projectId int) ([]Story, error) {
+func (c TrackerClient) ProjectStories() ([]Story, error) {
 	targetURL := fmt.Sprintf("%s/services/v5/projects/%d/stories?with_state=started",
-		c.URL, projectId)
+		c.URL, c.ProjectID)
 
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {

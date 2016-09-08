@@ -1,19 +1,19 @@
 package trackerapi
 
 type ClientProvider struct {
+	apiURL string
 }
 
-func NewClientProvider() ClientProvider {
-	return ClientProvider{}
-}
-
-func (ClientProvider) Client(token, url string) Client {
-	if url == "" {
-		url = "https://www.pivotaltracker.com"
+func NewClientProvider(apiURL string) ClientProvider {
+	return ClientProvider{
+		apiURL: apiURL,
 	}
+}
 
+func (c ClientProvider) Client(projectID int, token string) Client {
 	return TrackerClient{
-		URL:   url,
-		Token: token,
+		URL:       c.apiURL,
+		Token:     token,
+		ProjectID: projectID,
 	}
 }

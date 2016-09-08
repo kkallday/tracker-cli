@@ -29,42 +29,36 @@ var _ = Describe("App", func() {
 
 		fakeClientProvider.ClientCall.Returns.Client = fakeClient
 
-		app = application.NewApp(fakeClientProvider, fakeConfigurationLoader, fakeLogger)
+		app = application.NewApp(fakeLogger, fakeClientProvider, fakeConfigurationLoader)
 	})
 
 	Describe("Run", func() {
-		It("retrieves values from configuration file", func() {
-			err := app.Run("/dir/containing/config")
+		It("retrieves project id and token from env vars", func() {
+			err := app.Run()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeConfigurationLoader.LoadCall.CallCount).To(Equal(1))
-			Expect(fakeConfigurationLoader.LoadCall.Receives.PathToConfig).To(Equal("/dir/containing/config"))
 		})
 
-		It("initializes client with configuration", func() {
+		It("initializes client with project ID and token", func() {
 			fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
-				Token:               "some-token",
-				APIEndpointOverride: "http://www.some-other-tracker.com",
+				ProjectID: 12345,
+				Token:     "some-token",
 			}
 
-			err := app.Run("")
+			err := app.Run()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeClientProvider.ClientCall.CallCount).To(Equal(1))
-			Expect(fakeClientProvider.ClientCall.Receives.URL).To(Equal("http://www.some-other-tracker.com"))
+			Expect(fakeClientProvider.ClientCall.Receives.ProjectID).To(Equal(12345))
 			Expect(fakeClientProvider.ClientCall.Receives.Token).To(Equal("some-token"))
 		})
 
 		It("retrieves project stories", func() {
-			fakeConfigurationLoader.LoadCall.Returns.Configuration = application.Configuration{
-				ProjectID: 28,
-			}
-
-			err := app.Run("")
+			err := app.Run()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeClient.ProjectStoriesCall.CallCount).To(Equal(1))
-			Expect(fakeClient.ProjectStoriesCall.Receives.ProjectID).To(Equal(28))
 		})
 
 		It("writes title and stories to logger", func() {
@@ -74,7 +68,7 @@ var _ = Describe("App", func() {
 				{838312, "chore", "this is a chore", 0},
 			}
 
-			err := app.Run("")
+			err := app.Run()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeLogger.LogCall.CallCount).To(Equal(1))
@@ -95,7 +89,7 @@ var _ = Describe("App", func() {
 				It("returns an error", func() {
 					fakeConfigurationLoader.LoadCall.Returns.Error = errors.New("load failed")
 
-					err := app.Run("")
+					err := app.Run()
 					Expect(err).To(MatchError("load failed"))
 				})
 			})
@@ -104,7 +98,7 @@ var _ = Describe("App", func() {
 				It("returns an error", func() {
 					fakeClient.ProjectStoriesCall.Returns.Error = errors.New("failed to retrieve project stories")
 
-					err := app.Run("")
+					err := app.Run()
 					Expect(err).To(MatchError("failed to retrieve project stories"))
 				})
 			})

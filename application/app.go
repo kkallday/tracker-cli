@@ -9,11 +9,11 @@ type App struct {
 }
 
 type clientProvider interface {
-	Client(url, token string) trackerapi.Client
+	Client(projectID int, token string) trackerapi.Client
 }
 
 type configurationLoader interface {
-	Load(pathToConfigDir string) (Configuration, error)
+	Load() (Configuration, error)
 }
 
 type logger interface {
@@ -21,7 +21,7 @@ type logger interface {
 	Log(message string)
 }
 
-func NewApp(clientProvider clientProvider, configurationLoader configurationLoader, logger logger) App {
+func NewApp(logger logger, clientProvider clientProvider, configurationLoader configurationLoader) App {
 	return App{
 		clientProvider:      clientProvider,
 		configurationLoader: configurationLoader,
@@ -29,14 +29,14 @@ func NewApp(clientProvider clientProvider, configurationLoader configurationLoad
 	}
 }
 
-func (a App) Run(pathToConfigDir string) error {
-	cfg, err := a.configurationLoader.Load(pathToConfigDir)
+func (a App) Run() error {
+	cfg, err := a.configurationLoader.Load()
 	if err != nil {
 		return err
 	}
 
-	client := a.clientProvider.Client(cfg.Token, cfg.APIEndpointOverride)
-	stories, err := client.ProjectStories(cfg.ProjectID)
+	client := a.clientProvider.Client(cfg.ProjectID, cfg.Token)
+	stories, err := client.ProjectStories()
 	if err != nil {
 		return err
 	}

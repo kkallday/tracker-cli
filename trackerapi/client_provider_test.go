@@ -9,32 +9,17 @@ import (
 
 var _ = Describe("Client Provider", func() {
 	Describe("Client", func() {
-		It("returns client", func() {
-			clientProvider := trackerapi.NewClientProvider()
-
-			actualClient := clientProvider.Client("some-token", "http://www.some-tracker-api.com")
+		It("returns client with specified api url and token", func() {
+			clientProvider := trackerapi.NewClientProvider("http://www.some-tracker-api.com")
+			actualClient := clientProvider.Client(12345, "some-token")
 
 			expectedClient := trackerapi.TrackerClient{
-				URL:   "http://www.some-tracker-api.com",
-				Token: "some-token",
+				URL:       "http://www.some-tracker-api.com",
+				Token:     "some-token",
+				ProjectID: 12345,
 			}
 
 			Expect(actualClient).To(Equal(expectedClient))
-		})
-
-		Context("when api endpoint is not specified", func() {
-			It("returns a client with default URL", func() {
-				clientProvider := trackerapi.NewClientProvider()
-
-				actualClient := clientProvider.Client("some-token", "")
-
-				expectedClient := trackerapi.TrackerClient{
-					URL:   "https://www.pivotaltracker.com",
-					Token: "some-token",
-				}
-
-				Expect(actualClient).To(Equal(expectedClient))
-			})
 		})
 	})
 })

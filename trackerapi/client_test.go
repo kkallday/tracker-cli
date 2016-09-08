@@ -23,8 +23,8 @@ var _ = Describe("Client", func() {
 			}))
 			defer testServer.Close()
 
-			client := trackerapi.NewClient(testServer.URL, "")
-			actualStories, err := client.ProjectStories(1)
+			client := trackerapi.NewClient(testServer.URL, 12345, "token")
+			actualStories, err := client.ProjectStories()
 			Expect(err).NotTo(HaveOccurred())
 
 			expectedStories := []trackerapi.Story{
@@ -52,16 +52,16 @@ var _ = Describe("Client", func() {
 			}))
 			defer testServer.Close()
 
-			client := trackerapi.NewClient(testServer.URL, "some-tracker-api-token")
-			client.ProjectStories(6)
+			client := trackerapi.NewClient(testServer.URL, 6, "some-tracker-api-token")
+			client.ProjectStories()
 		})
 
 		Context("failure cases", func() {
 			Context("when request creation fails", func() {
 				It("returns an error", func() {
-					client := trackerapi.NewClient("http://%%%%%", "")
+					client := trackerapi.NewClient("http://%%%%%", 9, "")
 
-					_, err := client.ProjectStories(9)
+					_, err := client.ProjectStories()
 
 					Expect(err).To(MatchError("parse http://%%%%%/services/v5/projects/9/stories?with_state=started: invalid URL escape \"%%%\""))
 				})
@@ -69,9 +69,9 @@ var _ = Describe("Client", func() {
 
 			Context("when request fails", func() {
 				It("returns an error", func() {
-					client := trackerapi.NewClient("UNKNOWN-PROTOCOL://foo.com", "")
+					client := trackerapi.NewClient("UNKNOWN-PROTOCOL://foo.com", 4, "")
 
-					_, err := client.ProjectStories(4)
+					_, err := client.ProjectStories()
 
 					Expect(err).To(MatchError("Get unknown-protocol://foo.com/services/v5/projects/4/stories?with_state=started: unsupported protocol scheme \"unknown-protocol\""))
 				})
@@ -84,9 +84,9 @@ var _ = Describe("Client", func() {
 					}))
 					defer testServer.Close()
 
-					client := trackerapi.NewClient(testServer.URL, "")
+					client := trackerapi.NewClient(testServer.URL, 1, "")
 
-					_, err := client.ProjectStories(1)
+					_, err := client.ProjectStories()
 
 					Expect(err).To(MatchError("invalid character 'o' in literal null (expecting 'u')"))
 				})
@@ -100,9 +100,9 @@ var _ = Describe("Client", func() {
 					}))
 					defer testServer.Close()
 
-					client := trackerapi.NewClient(testServer.URL, "")
+					client := trackerapi.NewClient(testServer.URL, 1, "")
 
-					_, err := client.ProjectStories(1)
+					_, err := client.ProjectStories()
 
 					Expect(err).To(MatchError(`bad response: {"message": "an error occurred"}`))
 				})

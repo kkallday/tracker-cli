@@ -1,16 +1,16 @@
 package application
 
 import (
-	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
-	"path"
+	"strconv"
 )
 
+var getenv = os.Getenv
+
 type Configuration struct {
-	Token               string `json:"token"`
-	ProjectID           int    `json:"project_id"`
-	APIEndpointOverride string `json:"api_endpoint_override"`
+	Token     string `json:"token"`
+	ProjectID int    `json:"project_id"`
 }
 
 type ConfigurationLoader struct{}
@@ -19,23 +19,20 @@ func NewConfigurationLoader() ConfigurationLoader {
 	return ConfigurationLoader{}
 }
 
-func (ConfigurationLoader) Load(pathToConfigDir string) (Configuration, error) {
-	pathToConfigFile := path.Join(pathToConfigDir, "config.json")
+func (ConfigurationLoader) Load() (Configuration, error) {
+	projectIDStr := getenv("PROJECT_ID")
+	if projectIDStr == "" {
+		return Configuration{}, fmt.Errorf("PROJECT_ID is required.")
+	}
 
-	configFile, err := os.OpenFile(pathToConfigFile, 0, os.FileMode(0644))
+	projectID, err := strconv.Atoi(projectIDStr)
 	if err != nil {
-		return Configuration{}, err
+		return Configuration{}, fmt.Errorf("%q is not a valid PROJECT_ID. A number is required.", projectIDStr)
 	}
 
-	var cfg Configuration
-	err = json.NewDecoder(configFile).Decode(&cfg)
-	if err != nil {
-		return Configuration{}, err
-	}
-
-	if cfg.Token == "" || cfg.ProjectID == 0 {
-		return Configuration{}, errors.New("Configuration must contain a token and a project ID")
-	}
-
-	return cfg, nil
+	token := getenv("TOKEN")
+	return Configuration{
+		ProjectID: projectID,
+		Token:     token,
+	}, nil
 }
