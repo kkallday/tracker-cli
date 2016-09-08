@@ -34,4 +34,4 @@ NOTE: The environment variable `TOKEN` is only required for non-public tracker p
 ## Testing
 
 - To run tests you will need [ginkgo] (https://onsi.github.io/ginkgo) and [gomega] (https://onsi.github.io/gomega)
-- Run `ginkgo -r` to run all tests
+- Run `ginkgo -r` or `./bin/test` to run all tests
